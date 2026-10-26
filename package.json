@@ -7,7 +7,8 @@
     "dev": "astro dev",
     "build": "astro build && npx pagefind --site dist",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "sync:neodb": "node --env-file-if-exists=.env scripts/sync-neodb.mjs"
   },
   "dependencies": {
     "@astrojs/partytown": "^2.1.7",

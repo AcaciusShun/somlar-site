@@ -1,35 +1,63 @@
-name: Refresh Library (NeoDB)
+name: Sync Library (NeoDB)
 
-# Periodically triggers a Cloudflare Pages rebuild so the Library (书影音)
-# picks up new NeoDB marks. The build re-fetches NeoDB and renders fresh
-# static pages.
+# Polls NeoDB and commits src/data/library-snapshot.json ONLY when your marks
+# changed. That commit's push is what triggers a Cloudflare Pages build — so the
+# site deploys on (a) your own commits and (b) real NeoDB changes, never on a
+# blind timer. Unchanged runs do nothing and leave no deployment behind.
 #
 # Setup (one-time):
-#   1. Cloudflare Pages → your project → Settings → Builds & deployments →
-#      Deploy hooks → create one → copy its URL.
-#   2. GitHub repo → Settings → Secrets and variables → Actions →
-#      New repository secret → name: CF_DEPLOY_HOOK, value: <that URL>.
-#   3. Make sure NEODB_TOKEN (+ optional NEODB_INSTANCE) are set as
-#      Cloudflare Pages *build* environment variables, or the build falls
-#      back to sample data.
+#   GitHub repo → Settings → Secrets and variables → Actions:
+#     - Secret   NEODB_TOKEN    (read-scope token from https://<instance>/developer)
+#     - Variable NEODB_INSTANCE (optional, defaults to https://neodb.social)
+#
+# Note: don't put "[skip ci]" / "[CI Skip]" in the commit message below —
+# Cloudflare Pages honours those and would skip the build.
 
 on:
   schedule:
-    # GitHub cron is UTC-only. Every 3h during local active hours, quiet overnight:
-    #   UTC 01,04,07,10,13,16  ==  UTC+8 (Beijing) 09:00,12:00,15:00,18:00,21:00,00:00
-    #   (no builds UTC+8 00:00–09:00)
+    # GitHub cron is UTC-only. Every 3h during UTC+8 09:00–00:00; checks are free,
+    # deploys only happen when something changed.
     - cron: "0 1,4,7,10,13,16 * * *"
-  workflow_dispatch: {} # manual "Run workflow" button for an instant sync
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Rewrite the snapshot even if only community ratings/synopses changed"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: neodb-sync
+  cancel-in-progress: false
 
 jobs:
-  rebuild:
+  sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Cloudflare Pages deploy
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Fetch NeoDB marks
+        env:
+          NEODB_TOKEN: ${{ secrets.NEODB_TOKEN }}
+          NEODB_INSTANCE: ${{ vars.NEODB_INSTANCE }}
+          FORCE: ${{ inputs.force }}
+        run: node scripts/sync-neodb.mjs
+
+      - name: Commit snapshot if changed
         run: |
-          if [ -z "${{ secrets.CF_DEPLOY_HOOK }}" ]; then
-            echo "::notice::CF_DEPLOY_HOOK not set yet — skipping (no rebuild). Add the secret to enable auto-rebuilds; see this file's header."
+          if git diff --quiet -- src/data/library-snapshot.json; then
+            echo "Snapshot unchanged — nothing to deploy."
             exit 0
           fi
-          curl -fsS -X POST "${{ secrets.CF_DEPLOY_HOOK }}"
-          echo "Triggered a Cloudflare Pages rebuild."
+          count=$(node -e 'console.log(require("./src/data/library-snapshot.json").length)')
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/library-snapshot.json
+          git commit -m "chore(library): sync NeoDB snapshot (${count} items)"
+          git push

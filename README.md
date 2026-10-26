@@ -33,7 +33,7 @@ Personal site and digital study — built with [Astro 7](https://astro.build/), 
 | Syntax | Shiki (github-light / github-dark) |
 | Search | Pagefind |
 | Comments | Twikoo |
-| Library data | NeoDB API (build-time sync) |
+| Library data | NeoDB API (CI-synced snapshot) |
 | Media | Cloudflare R2 CDN |
 
 ## Configuration
@@ -43,33 +43,27 @@ Environment variables live in `.env` (gitignored). Copy `.env.example` to `.env`
 | Variable | Used by | Notes |
 |----------|---------|-------|
 | `PUBLIC_TWIKOO_ENV_ID` | Comments | Twikoo backend URL / env id. `PUBLIC_`-prefixed, so it's exposed to the client (required by the widget). |
-| `NEODB_TOKEN` | Library | NeoDB personal access token with **read** scope. **Build-time only — never shipped to the client.** Generate one at `https://<instance>/developer`. |
+| `NEODB_TOKEN` | Library | NeoDB personal access token with **read** scope. Used by `npm run sync:neodb` / `astro dev` locally and as a GitHub Actions secret — not needed on Cloudflare, never shipped to the client. Generate one at `https://<instance>/developer`. |
 | `NEODB_INSTANCE` | Library | NeoDB instance base URL. Defaults to `https://neodb.social`. |
 
 > When deploying, set these in your host's **build environment variables** — `.env` is never committed.
 
 ### How the Library sync works
 
-`src/lib/neodb.ts` queries your marks at build time and renders them to static pages:
+Library data lives in a committed snapshot, `src/data/library-snapshot.json`, which production builds read directly (no NeoDB call at build time, so builds are deterministic).
 
-- **Fetch** — pulls every shelf (`wishlist` / `progress` / `complete` / `dropped`) from `GET /api/me/shelf/{type}` (paginated, Bearer auth) and maps them to a typed `LibraryItem[]`.
-- **Cache** — stores the result on disk (`node_modules/.cache/neodb/`) so `astro dev` doesn't re-hit the API on every page load; `astro build` always refetches fresh.
+- **Sync** — [`.github/workflows/refresh-library.yml`](.github/workflows/refresh-library.yml) runs `scripts/sync-neodb.mjs` every few hours. It pulls every shelf (`wishlist` / `progress` / `complete` / `dropped`) from `GET /api/me/shelf/{type}` and commits the snapshot **only if your marks changed** (shelf, rating, comment, tags, date, title, cover). That push triggers the Cloudflare Pages build, so the site deploys on your own commits and on real NeoDB changes — never on a blind timer. Changes to community ratings / synopses alone don't trigger a deploy; they're refreshed with the next real change, or on demand via *Run workflow → force*. Requires a `NEODB_TOKEN` repo secret (optional `NEODB_INSTANCE` repo variable).
+- **Local** — `npm run sync:neodb` does the same with the token from `.env` (add `-- --force` to rewrite regardless); review the diff and commit. `astro dev` fetches live from NeoDB (cached 24h in `node_modules/.cache/neodb/`) so you can preview new marks before syncing.
 - **Covers** — NeoDB's `cover_image_url` wrapped in a Cloudflare image-transformation URL (`/cdn-cgi/image/...`), so they serve from this zone (reachable in mainland China, unlike neodb.social) and are resized/reformatted at the edge. Requires the zone's Transformations to allow `neodb.social` as a source origin. Lazy-loaded; no local image pipeline.
-- **Resilience** — if `NEODB_TOKEN` is unset or NeoDB is temporarily unavailable, the build uses the committed last-known-good snapshot in `src/data/library-snapshot.json`. This keeps real Library entries and covers online instead of publishing demo placeholders.
-
-After a successful local sync, refresh the fallback snapshot with `jq . node_modules/.cache/neodb/items.json > src/data/library-snapshot.json`, review the diff, and commit it with the related Library update.
-
-Because the data is baked at build time, the live site refreshes on each rebuild.
-[`.github/workflows/refresh-library.yml`](.github/workflows/refresh-library.yml) triggers a
-Cloudflare Pages rebuild on a schedule (and on demand) so new NeoDB marks show up
-automatically — set a `CF_DEPLOY_HOOK` repo secret to your Pages deploy-hook URL.
+- **Resilience** — a failed or empty NeoDB response never overwrites the snapshot, so an outage just means no update.
 
 ## Development
 
 ```bash
 npm install
 npm run dev        # http://localhost:4321
-npm run build      # production build (fetches NeoDB + indexes search)
+npm run build      # production build (reads Library snapshot + indexes search)
+npm run sync:neodb # refresh the Library snapshot from NeoDB
 npm run preview    # preview the production build
 ```
 

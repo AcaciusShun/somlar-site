@@ -1,17 +1,20 @@
-// Build-time fetch of NeoDB marks → LibraryItem[].
+// Library (书影音) data source.
 //
-// Runs only during `astro build` / `astro dev` (server side), so the token
-// from .env (NEODB_TOKEN) is never bundled into client code.
+// Production builds read ONLY the committed snapshot (src/data/library-snapshot.json).
+// The snapshot is refreshed by .github/workflows/refresh-library.yml, which commits
+// it only when your NeoDB marks actually change — that push is what triggers a
+// Cloudflare Pages deploy. So every deploy maps to a real commit, and builds are
+// deterministic (no network dependency on NeoDB).
 //
-// Endpoints used (Bearer auth, read scope):
-//   GET /api/me/shelf/{type}?page=N   → { data: Mark[], pages, count }
-// where type ∈ wishlist | progress | complete | dropped.
+// `astro dev` still fetches live from NeoDB (cached on disk for 24h) so you can
+// preview new marks locally; run `npm run sync:neodb` to update the snapshot.
 
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import librarySnapshot from "../data/library-snapshot.json";
 import { siteConfig } from "./config";
+import { fetchLibraryFromNeoDB } from "./neodb-fetch.mjs";
 
 export type MediaCategory = "book" | "movie" | "tv" | "music" | "game" | "podcast";
 export type ShelfType = "wishlist" | "progress" | "complete" | "dropped";
@@ -42,90 +45,9 @@ function useSnapshot(reason: string): LibraryItem[] {
   return snapshotItems;
 }
 
-const SHELF_TYPES: ShelfType[] = ["complete", "progress", "wishlist", "dropped"];
-
-interface NeoMark {
-  shelf_type: ShelfType;
-  created_time: string;
-  comment_text: string | null;
-  rating_grade: number | null;
-  tags: string[];
-  item: {
-    uuid: string;
-    category: string;
-    display_title?: string;
-    title?: string;
-    cover_image_url: string | null;
-    url: string;
-    description?: string;
-    rating?: number | null;
-    rating_count?: number | null;
-  };
-}
-
-// Route covers through Cloudflare Image Transformations on our own zone, so they
-// serve from somlar.com (reachable in mainland China, unlike neodb.social) and
-// are resized + reformatted (WebP/AVIF) at the edge. Requires the zone's
-// Transformations to allow neodb.social as a source origin.
-const COVER_PREFIX = `${siteConfig.url.replace(/\/$/, "")}/cdn-cgi/image/width=400,quality=80,format=auto`;
-const transformCover = (url: string): string => `${COVER_PREFIX}/${url}`;
-
-function mapMark(m: NeoMark, base: string): LibraryItem {
-  const it = m.item;
-  const url = it.url?.startsWith("http") ? it.url : base + it.url;
-  return {
-    uuid: it.uuid,
-    category: it.category,
-    title: it.display_title || it.title || "Untitled",
-    cover: it.cover_image_url ? transformCover(it.cover_image_url) : null,
-    rating: m.rating_grade ?? null,
-    comment: m.comment_text || "",
-    tags: m.tags || [],
-    date: (m.created_time || "").slice(0, 10),
-    shelf: m.shelf_type,
-    url,
-    communityRating: it.rating ?? null,
-    ratingCount: it.rating_count ?? null,
-    description: it.description || "",
-  };
-}
-
-// Fetch JSON with retry + backoff, so a transient blip (or 429/5xx) during a
-// build doesn't sink the whole sync into the sample-data fallback.
-async function fetchJson(url: string, token: string, retries = 3): Promise<{ data: NeoMark[]; pages: number }> {
-  let lastErr: unknown;
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) return res.json();
-      // Don't retry real client errors (401/403/404…); do retry 429 / 5xx.
-      if (res.status < 500 && res.status !== 429) throw new Error(`HTTP ${res.status}`);
-      lastErr = new Error(`HTTP ${res.status}`);
-    } catch (err) {
-      lastErr = err;
-    }
-    if (attempt < retries) await new Promise((r) => setTimeout(r, 500 * attempt));
-  }
-  throw lastErr;
-}
-
-async function fetchShelf(type: ShelfType, base: string, token: string): Promise<NeoMark[]> {
-  const out: NeoMark[] = [];
-  let page = 1;
-  let pages = 1;
-  do {
-    const json = await fetchJson(`${base}/api/me/shelf/${type}?page=${page}`, token);
-    out.push(...json.data);
-    pages = json.pages || 1;
-    page += 1;
-  } while (page <= pages);
-  return out;
-}
-
 // ─── Dev cache ───
 // In `astro dev` the page frontmatter re-runs on every request, so without a
 // cache each /library load re-hits the NeoDB API (~10 calls) → slow & pending.
-// Cache the result on disk; dev reads it, `astro build` always refetches fresh.
 
 const CACHE_FILE = path.resolve("node_modules/.cache/neodb/items.json");
 const DEV_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
@@ -158,25 +80,27 @@ export function fetchLibraryItems(): Promise<LibraryItem[]> {
 }
 
 async function loadLibraryItems(): Promise<LibraryItem[]> {
-  if (import.meta.env.DEV) {
-    const cached = readDevCache();
-    if (cached) {
-      console.log(`[neodb] dev cache hit (${cached.length} items)`);
-      return cached;
-    }
+  if (!import.meta.env.DEV) {
+    if (snapshotItems.length === 0) throw new Error("[neodb] committed Library snapshot is empty.");
+    console.log(`[neodb] using committed snapshot (${snapshotItems.length} items)`);
+    return snapshotItems;
+  }
+
+  const cached = readDevCache();
+  if (cached) {
+    console.log(`[neodb] dev cache hit (${cached.length} items)`);
+    return cached;
   }
   const token = import.meta.env.NEODB_TOKEN ?? process.env.NEODB_TOKEN;
-  const base = (import.meta.env.NEODB_INSTANCE ?? process.env.NEODB_INSTANCE ?? "https://neodb.social").replace(/\/$/, "");
+  const base = import.meta.env.NEODB_INSTANCE ?? process.env.NEODB_INSTANCE ?? "https://neodb.social";
 
   if (!token) {
     return useSnapshot("NEODB_TOKEN not set");
   }
 
   try {
-    const marks = (await Promise.all(SHELF_TYPES.map((t) => fetchShelf(t, base, token)))).flat();
-    const items = marks.map((m) => mapMark(m, base));
-    items.sort((a, b) => b.date.localeCompare(a.date));
-    console.log(`[neodb] fetched ${items.length} marks from ${base} (covers via Cloudflare transform)`);
+    const items = (await fetchLibraryFromNeoDB({ base, token, siteUrl: siteConfig.url })) as LibraryItem[];
+    console.log(`[neodb] fetched ${items.length} marks from ${base} (dev)`);
     await writeDevCache(items);
     return items;
   } catch (err) {
