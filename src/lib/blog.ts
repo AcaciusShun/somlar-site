@@ -41,3 +41,12 @@ export function formatDate(date: Date): string {
 export function postSlug(post: { id: string; data: { slug?: string } }) {
   return post.data.slug || post.id;
 }
+
+export function formatISODate(date: Date): string {
+  return date.toLocaleDateString("sv-SE", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}

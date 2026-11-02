@@ -1,0 +1,107 @@
+<dialog class="article-image-dialog" aria-label="查看原图">
+  <button class="text-button" type="button" data-close-image>关闭图片</button>
+  <img alt="" />
+</dialog>
+
+<script>
+  const prose = document.querySelector<HTMLElement>(".reading-prose");
+
+  if (prose) {
+    prose.querySelectorAll<HTMLPreElement>("pre").forEach((pre) => {
+      pre.tabIndex = 0;
+      pre.setAttribute("aria-label", "代码，可横向滚动");
+      if (!navigator.clipboard) return;
+
+      const block = document.createElement("div");
+      block.className = "code-block";
+      const tools = document.createElement("div");
+      tools.className = "code-tools";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "text-button";
+      button.textContent = "复制代码";
+      button.setAttribute("aria-live", "polite");
+      pre.before(block);
+      tools.append(button);
+      block.append(tools, pre);
+
+      button.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(pre.querySelector("code")?.textContent || "");
+          button.textContent = "已复制";
+        } catch {
+          button.textContent = "复制失败，请手动选择";
+        }
+        window.setTimeout(() => { button.textContent = "复制代码"; }, 1800);
+      });
+    });
+
+    prose.querySelectorAll<HTMLTableElement>("table").forEach((table) => {
+      const scroll = document.createElement("div");
+      scroll.className = "table-scroll";
+      scroll.tabIndex = 0;
+      scroll.setAttribute("role", "region");
+      scroll.setAttribute("aria-label", `${table.caption?.textContent || "文章表格"}，可左右滚动`);
+      table.before(scroll);
+      scroll.append(table);
+    });
+
+    const toc = document.querySelector<HTMLDetailsElement>(".article-toc");
+    toc?.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => {
+      if (matchMedia("(max-width: 600px)").matches) toc.open = false;
+    }));
+
+    const dialog = document.querySelector<HTMLDialogElement>(".article-image-dialog");
+    const fullImage = dialog?.querySelector("img");
+    let imageTrigger: HTMLAnchorElement | undefined;
+    let scrollY = 0;
+    let savedPosition = "";
+    let savedTop = "";
+    let savedWidth = "";
+    let savedOverflow = "";
+
+    if (dialog && fullImage) {
+      prose.querySelectorAll<HTMLImageElement>("img").forEach((image) => {
+        if (image.closest("a")) return;
+        const link = document.createElement("a");
+        link.className = "image-link";
+        link.href = image.src;
+        link.setAttribute("aria-label", image.alt ? `查看原图：${image.alt}` : "查看原图");
+        image.before(link);
+        link.append(image);
+        link.addEventListener("click", (event) => {
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+          event.preventDefault();
+          imageTrigger = link;
+          fullImage.src = image.currentSrc || image.src;
+          fullImage.alt = image.alt;
+          scrollY = window.scrollY;
+          savedPosition = document.body.style.position;
+          savedTop = document.body.style.top;
+          savedWidth = document.body.style.width;
+          savedOverflow = document.documentElement.style.overflow;
+          dialog.showModal();
+          document.documentElement.style.overflow = "hidden";
+          document.body.style.position = "fixed";
+          document.body.style.top = `-${scrollY}px`;
+          document.body.style.width = "100%";
+        });
+      });
+
+      dialog.querySelector("[data-close-image]")?.addEventListener("click", () => dialog.close());
+      dialog.addEventListener("click", (event) => {
+        if (event.target !== dialog) return;
+        const bounds = dialog.getBoundingClientRect();
+        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
+      });
+      dialog.addEventListener("close", () => {
+        document.body.style.position = savedPosition;
+        document.body.style.top = savedTop;
+        document.body.style.width = savedWidth;
+        document.documentElement.style.overflow = savedOverflow;
+        window.scrollTo(0, scrollY);
+        imageTrigger?.focus({ preventScroll: true });
+      });
+    }
+  }
+</script>

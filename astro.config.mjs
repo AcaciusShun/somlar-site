@@ -1,31 +1,20 @@
 import { defineConfig } from "astro/config";
-import react from "@astrojs/react";
 import sitemap from "@astrojs/sitemap";
 import partytown from "@astrojs/partytown";
-import tailwindcss from "@tailwindcss/vite";
-import icon from "astro-icon";
 
 export default defineConfig({
   site: "https://somlar.com",
   integrations: [
-    react(),
     sitemap(),
-    icon(),
     partytown({
       config: {
         forward: ["dataLayer.push"],
       },
     }),
   ],
-  vite: {
-    plugins: [tailwindcss()],
-  },
   markdown: {
     shikiConfig: {
-      themes: {
-        light: "github-light",
-        dark: "github-dark",
-      },
+      theme: "github-light",
     },
   },
   prefetch: {

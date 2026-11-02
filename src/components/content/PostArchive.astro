@@ -1,0 +1,34 @@
+---
+import type { CollectionEntry } from "astro:content";
+import PostIndex from "./PostIndex.astro";
+import { formatISODate } from "@/lib/blog";
+
+interface Props {
+  posts: CollectionEntry<"blog">[];
+}
+
+const { posts } = Astro.props;
+const grouped = new Map<string, typeof posts>();
+for (const post of posts) {
+  const year = formatISODate(post.data.date).slice(0, 4);
+  const entries = grouped.get(year) ?? [];
+  entries.push(post);
+  grouped.set(year, entries);
+}
+const years = [...grouped.keys()].sort((a, b) => Number(b) - Number(a));
+---
+
+{years.length > 1 && (
+  <nav class="year-nav" aria-label="按年份浏览">
+    {years.map((year) => <a href={`#year-${year}`}>{year}</a>)}
+  </nav>
+)}
+
+{years.map((year) => (
+  <section class="year-group" aria-labelledby={`year-${year}`}>
+    <h2 id={`year-${year}`}>{year}</h2>
+    <PostIndex posts={grouped.get(year)!} />
+  </section>
+))}
+
+{posts.length === 0 && <p>还没有文章。</p>}

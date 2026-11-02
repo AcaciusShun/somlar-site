@@ -1,10 +1,11 @@
 export const siteConfig = {
   title: "Somlar",
-  description: "Somlar 的个人站点 — 技术笔记、开源项目与实验记录。",
+  description: "acacius 的个人站点 — 技术实践、阅读笔记与日常随想。",
   url: "https://somlar.com",
-  author: "Somlar",
+  author: "acacius",
   mastodon: "https://m.somincola.org/@acacius",
   nav: [
+    { label: "Home", href: "/" },
     { label: "Blog", href: "/blog" },
     { label: "Projects", href: "/projects" },
     { label: "Labs", href: "/labs" },

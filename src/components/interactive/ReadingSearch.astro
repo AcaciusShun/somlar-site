@@ -1,0 +1,158 @@
+<details class="reading-search" id="search" data-pagefind-ignore data-dev={import.meta.env.DEV ? "true" : undefined}>
+  <summary>搜索文章</summary>
+  <form class="search-content" role="search">
+    <label for="reading-search-input">输入关键词</label>
+    <div class="search-input-row">
+      <input id="reading-search-input" type="search" autocomplete="off" autocapitalize="none" enterkeyhint="search" placeholder="例如：Mastodon、阅读、AI" />
+      <button class="text-button" type="submit">搜索</button>
+    </div>
+    <p class="search-status muted" role="status" aria-live="polite"></p>
+    <ul class="search-results"></ul>
+    <noscript><p>搜索需要 JavaScript。你也可以直接浏览下面的年度文章列表。</p></noscript>
+  </form>
+</details>
+
+<!-- Keep the runtime Pagefind import outside Vite's inline-module preloader. -->
+<script is:inline type="module">
+  const details = document.querySelector(".reading-search");
+  const input = document.querySelector("#reading-search-input");
+  const status = document.querySelector(".search-status");
+  const results = document.querySelector(".search-results");
+  const form = details?.querySelector("form");
+
+  if (details && input && status && results) {
+    let indexPromise;
+    let requestId = 0;
+    let timer;
+
+    const getIndex = () => {
+      if (!indexPromise) {
+        const indexUrl = "/pagefind/pagefind.js";
+        indexPromise = import(/* @vite-ignore */ indexUrl).then(async (index) => {
+          await index.init();
+          return index;
+        }).catch((error) => {
+          indexPromise = undefined;
+          throw error;
+        });
+      }
+      return indexPromise;
+    };
+
+    const search = async (query, id) => {
+      results.replaceChildren();
+      if (!query) {
+        status.textContent = "";
+        return;
+      }
+
+      status.textContent = "正在搜索…";
+      try {
+        const index = await getIndex();
+        const response = await index.search(query);
+        const pages = await Promise.all(response.results.slice(0, 10).map((result) => result.data()));
+        if (id !== requestId) return;
+
+        status.textContent = response.results.length
+          ? `找到 ${response.results.length} 篇文章${response.results.length > 10 ? "，显示前 10 篇" : ""}。`
+          : "没有找到相关的文章，试试其他关键词。";
+
+        for (const page of pages) {
+          const item = document.createElement("li");
+          const link = document.createElement("a");
+          link.href = page.url;
+          link.textContent = page.meta.title || "查看文章";
+          const excerpt = document.createElement("p");
+          excerpt.className = "muted";
+          excerpt.textContent = new DOMParser().parseFromString(page.excerpt, "text/html").body.textContent;
+          item.append(link, excerpt);
+          results.append(item);
+        }
+      } catch {
+        if (id !== requestId) return;
+        status.textContent = details.dataset.dev === "true"
+          ? "开发预览中没有搜索索引，请在构建后的预览中使用搜索。"
+          : "暂时无法加载搜索，请稍后再试。也可以浏览下方的年度列表。";
+      }
+    };
+
+    input.addEventListener("input", () => {
+      clearTimeout(timer);
+      const id = ++requestId;
+      const query = input.value.trim();
+      timer = setTimeout(() => search(query, id), 180);
+    });
+
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      clearTimeout(timer);
+      search(input.value.trim(), ++requestId);
+      if (matchMedia("(pointer: coarse)").matches) input.blur();
+    });
+
+    const openFromHash = () => {
+      if (location.hash === "#search") {
+        details.open = true;
+        input.focus({ preventScroll: true });
+      }
+    };
+    window.addEventListener("hashchange", openFromHash);
+    openFromHash();
+  }
+</script>
+
+<style>
+  .reading-search {
+    margin-block: 0 1.5rem;
+  }
+
+  summary {
+    color: var(--reading-link);
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+
+  .search-content {
+    margin-top: 1rem;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 0.4rem;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid #aaa;
+    border-radius: 3px;
+    color: inherit;
+    background: #fff;
+    min-width: 0;
+    min-height: 46px;
+  }
+
+  .search-input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+  }
+
+  .search-status {
+    margin-block: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .search-results {
+    padding-left: 1.25em;
+  }
+
+  .search-results :global(li) {
+    margin-bottom: 1rem;
+  }
+
+  .search-results :global(p) {
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+  }
+</style>

@@ -7,7 +7,7 @@ description: "从 Token 通信、BPE 分词、Context Window、压缩算法等�
 tags: ["AI", "LLM", "幻觉", "科普"]
 ---
 
-AI 幻觉（Hallucination）指大语言模型生成看似合理、实则错误的内容——虚构事实、张冠李戴、自信地给出错误答案。例如：问「某位学者的博士论文标题是什么」，模型可能自信地给出三个不同答案，却全部错误；问「他的生日是哪天」，同样可能编造三个日期，无一正确。要理解幻觉从何而来，需要从模型与文本交互的底层机制入手。本文从 Token、BPE、Context Window、压缩算法等环节，梳理幻觉的来源与成因。（关于 Token、Context Window 等基础概念，可参考 [LLM 与 AI 应用核心概念科普](/blogs/llm-ai-concepts-token-prompt-mcp-skill/)。）
+AI 幻觉（Hallucination）指大语言模型生成看似合理、实则错误的内容——虚构事实、张冠李戴、自信地给出错误答案。例如：问「某位学者的博士论文标题是什么」，模型可能自信地给出三个不同答案，却全部错误；问「他的生日是哪天」，同样可能编造三个日期，无一正确。要理解幻觉从何而来，需要从模型与文本交互的底层机制入手。本文从 Token、BPE、Context Window、压缩算法等环节，梳理幻觉的来源与成因。（关于 Token、Context Window 等基础概念，可参考 [LLM 与 AI 应用核心概念科普](/blog/llm-ai-concepts-token-prompt-mcp-skill/)。）
 
 ---
 

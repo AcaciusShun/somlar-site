@@ -1,0 +1,28 @@
+---
+interface Resource {
+  name: string;
+  desc: string;
+  tech: string[];
+  repo: string;
+  url?: string;
+}
+
+interface Props {
+  items: Resource[];
+}
+
+const { items } = Astro.props;
+---
+
+<ul class="resource-list">
+  {items.map((item) => (
+    <li>
+      <h3><a href={item.url || item.repo}>{item.name}</a></h3>
+      <p>{item.desc}</p>
+      <p class="resource-meta">
+        <span>{item.tech.join("、")}</span>
+        <a href={item.repo} aria-label={`${item.name} 源码`}>源码</a>
+      </p>
+    </li>
+  ))}
+</ul>

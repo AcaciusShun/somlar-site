@@ -10,7 +10,7 @@ cover:
   alt: "Agent Patterns: ReAct 与 Plan-and-Execute 架构示意图"
 ---
 
-AI Agent（智能体）是能够自主感知、决策、执行并达成目标的系统。在 LLM 时代，Agent 通常指「大模型 + 工具调用 + 循环控制」的组合，能够完成多步任务、调用外部 API、根据反馈调整行为。本文介绍 Agent 的概念与原理，重点拆解 **ReAct** 和 **Plan-and-Execute** 两种主流模式，并列举其他较少用或过时的模式及其缺点。（关于 Tool、MCP 等基础概念，可参考 [LLM 与 AI 应用核心概念科普](/blogs/llm-ai-concepts-token-prompt-mcp-skill/)。）
+AI Agent（智能体）是能够自主感知、决策、执行并达成目标的系统。在 LLM 时代，Agent 通常指「大模型 + 工具调用 + 循环控制」的组合，能够完成多步任务、调用外部 API、根据反馈调整行为。本文介绍 Agent 的概念与原理，重点拆解 **ReAct** 和 **Plan-and-Execute** 两种主流模式，并列举其他较少用或过时的模式及其缺点。（关于 Tool、MCP 等基础概念，可参考 [LLM 与 AI 应用核心概念科普](/blog/llm-ai-concepts-token-prompt-mcp-skill/)。）
 
 ---
 

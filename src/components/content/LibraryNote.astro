@@ -1,0 +1,28 @@
+---
+interface Props {
+  text: string;
+}
+
+const { text } = Astro.props;
+const parts = text.split(/(>![\s\S]*?!<)/g).filter(Boolean);
+---
+
+<div class="library-note">
+  {parts.map((part) => part.startsWith(">!") && part.endsWith("!<") ? (
+    <details class="library-spoiler">
+      <summary>剧透内容（点击展开）</summary>
+      <p>{part.slice(2, -2)}</p>
+    </details>
+  ) : <span>{part}</span>)}
+</div>
+
+<style>
+  .library-note > span,
+  .library-spoiler p {
+    white-space: pre-wrap;
+  }
+
+  .library-spoiler p {
+    margin-block: 0.5rem;
+  }
+</style>

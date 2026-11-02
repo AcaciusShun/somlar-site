@@ -1,0 +1,65 @@
+---
+import "@/styles/reading.css";
+import SiteHead from "@/components/layout/SiteHead.astro";
+import AnalyticsConsent from "@/components/analytics/AnalyticsConsent.astro";
+import { siteConfig } from "@/lib/config";
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogType?: "website" | "article";
+  ogImage?: string;
+  publishedTime?: string;
+  tags?: string[];
+  noindex?: boolean;
+}
+
+const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
+const year = new Date().getFullYear();
+---
+
+<html lang="zh-CN" class="reading-site">
+  <head>
+    <SiteHead {...Astro.props} viewport="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#ffffff" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳至正文</a>
+    <div class:list={["reading-shell", { "reading-shell--article": Astro.props.ogType === "article" }]}>
+      <header class="site-header" data-pagefind-ignore>
+        <a class="site-name" href="/">
+          {siteConfig.title}
+        </a>
+        <nav class="site-nav" aria-label="主导航">
+          {siteConfig.nav.map((item) => (
+            <a
+              href={item.href}
+              aria-current={pathname === item.href ? "page" : item.href !== "/" && pathname.startsWith(`${item.href}/`) ? "location" : undefined}
+            >
+              {item.label}
+            </a>
+          ))}
+          <a href="/blog#search">搜索</a>
+        </nav>
+      </header>
+
+      <main id="main" tabindex="-1">
+        <slot />
+      </main>
+
+      <footer class="site-footer" data-pagefind-ignore>
+        <p>&copy; {year} {siteConfig.author}</p>
+        <nav aria-label="其他链接">
+          <a href="/rss.xml">RSS</a>
+          <a href={siteConfig.mastodon} rel="me">Mastodon</a>
+          <a href="/friends">Friends</a>
+          {siteConfig.analytics.measurementId && (
+            <button class="text-button" type="button" data-analytics-settings>阅读统计</button>
+          )}
+        </nav>
+      </footer>
+      <AnalyticsConsent />
+    </div>
+  </body>
+</html>
