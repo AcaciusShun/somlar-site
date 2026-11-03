@@ -184,6 +184,9 @@ select { font-size: max(1rem, 16px); }
   text-underline-offset: 0.4em;
 }
 
+.site-nav .site-nav__search { justify-content: center; }
+.site-nav__search svg { flex-shrink: 0; }
+
 .home-intro { max-width: 40rem; }
 .home-intro h1 { font-size: 1.75rem; }
 .home-intro > p:last-child { margin-bottom: 0; }
@@ -799,7 +802,7 @@ summary {
 
   .site-nav {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
     gap: 0 0.4rem;
   }
