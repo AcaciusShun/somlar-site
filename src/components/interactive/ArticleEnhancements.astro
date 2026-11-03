@@ -4,6 +4,8 @@
 </dialog>
 
 <script>
+  import { createDialogController } from "@/lib/dialog";
+
   const prose = document.querySelector<HTMLElement>(".reading-prose");
 
   if (prose) {
@@ -48,60 +50,45 @@
 
     const toc = document.querySelector<HTMLDetailsElement>(".article-toc");
     toc?.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => {
-      if (matchMedia("(max-width: 600px)").matches) toc.open = false;
+      if (matchMedia("(max-width: 600px), (pointer: coarse)").matches) toc.open = false;
     }));
 
     const dialog = document.querySelector<HTMLDialogElement>(".article-image-dialog");
     const fullImage = dialog?.querySelector("img");
-    let imageTrigger: HTMLAnchorElement | undefined;
-    let scrollY = 0;
-    let savedPosition = "";
-    let savedTop = "";
-    let savedWidth = "";
-    let savedOverflow = "";
+    let imageRequest = 0;
 
     if (dialog && fullImage) {
+      const controller = createDialogController(dialog);
       prose.querySelectorAll<HTMLImageElement>("img").forEach((image) => {
         if (image.closest("a")) return;
+        const media = image.closest("picture") || image;
         const link = document.createElement("a");
         link.className = "image-link";
-        link.href = image.src;
+        link.href = image.dataset.fullImage || image.src;
         link.setAttribute("aria-label", image.alt ? `查看原图：${image.alt}` : "查看原图");
-        image.before(link);
-        link.append(image);
+        media.before(link);
+        link.append(media);
         link.addEventListener("click", (event) => {
           if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
           event.preventDefault();
-          imageTrigger = link;
-          fullImage.src = image.currentSrc || image.src;
+          const request = ++imageRequest;
+          const preview = image.currentSrc || image.src;
+          const original = image.dataset.fullImage || image.src;
+          fullImage.src = preview;
           fullImage.alt = image.alt;
-          scrollY = window.scrollY;
-          savedPosition = document.body.style.position;
-          savedTop = document.body.style.top;
-          savedWidth = document.body.style.width;
-          savedOverflow = document.documentElement.style.overflow;
-          dialog.showModal();
-          document.documentElement.style.overflow = "hidden";
-          document.body.style.position = "fixed";
-          document.body.style.top = `-${scrollY}px`;
-          document.body.style.width = "100%";
+          controller.open(link);
+          if (original !== preview) {
+            const preload = new Image();
+            preload.decoding = "async";
+            preload.onload = () => {
+              if (dialog.open && request === imageRequest) fullImage.src = original;
+            };
+            preload.src = original;
+          }
         });
       });
 
       dialog.querySelector("[data-close-image]")?.addEventListener("click", () => dialog.close());
-      dialog.addEventListener("click", (event) => {
-        if (event.target !== dialog) return;
-        const bounds = dialog.getBoundingClientRect();
-        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
-      });
-      dialog.addEventListener("close", () => {
-        document.body.style.position = savedPosition;
-        document.body.style.top = savedTop;
-        document.body.style.width = savedWidth;
-        document.documentElement.style.overflow = savedOverflow;
-        window.scrollTo(0, scrollY);
-        imageTrigger?.focus({ preventScroll: true });
-      });
     }
   }
 </script>

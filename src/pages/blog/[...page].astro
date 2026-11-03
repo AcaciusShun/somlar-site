@@ -19,5 +19,7 @@ const posts = await getPublishedPosts();
 <ReadingLayout title="文章" description="技术实践、阅读笔记和日常随想，按年份归档。">
   <h1 class="visually-hidden">文章</h1>
   <ReadingSearch />
-  <PostArchive posts={posts} />
+  <div id="blog-archive">
+    <PostArchive posts={posts} />
+  </div>
 </ReadingLayout>

@@ -8,13 +8,15 @@ const posts = await getPublishedPosts();
 ---
 
 <ReadingLayout>
+  <div class="home-intro">
   <h1>你好，我是 {siteConfig.author}。</h1>
   <p>写代码，也写一些生活里的事。</p>
   <p>
-    这里记录我的技术实践、阅读笔记和日常随想。
-    偶尔做些<a href="/projects">小项目</a>，也把看过的书、电影和听过的音乐记在<a href="/library">书影音</a>里。
+    这里记录开发实践、阅读笔记和日常见闻。
+    你也可以看看我做的<a href="/projects">应用与工具</a>，或翻翻<a href="/library">书影音与游戏记录</a>。
     <a href="/about">更多关于我</a>。
   </p>
+  </div>
 
   <section aria-labelledby="latest-writing">
     <h2 id="latest-writing">最近的文章</h2>
@@ -25,8 +27,8 @@ const posts = await getPublishedPosts();
   <section aria-labelledby="selected-projects">
     <h2 id="selected-projects">正在做的事</h2>
     <ul>
-      <li><a href="https://somincola.org">Somincola</a>：一个自托管的 Mastodon 社区。</li>
-      <li><a href="https://github.com/somincola/moro-ios">Moro</a>：一个原生的 Mastodon iOS 客户端。</li>
+      <li><a href={siteConfig.links.moro}>Moro</a>：正在开发的原生 Mastodon iOS 客户端。</li>
+      <li><a href={siteConfig.links.community}>Somincola Garden</a>：一个自托管的中文 Mastodon 社区。</li>
       <li><a href="https://github.com/somincola/mastodon-news-center">Mastodon News Center</a>：管理 RSS 新闻机器人的工具。</li>
     </ul>
     <p>你可以通过 <a href="/rss.xml">RSS</a> 订阅更新，或在 <a href="https://m.somincola.org/@acacius" rel="me">Mastodon</a> 找到我。</p>

@@ -4,87 +4,72 @@ const analyticsEnabled = Boolean(siteConfig.analytics.measurementId);
 ---
 
 {analyticsEnabled && (
-  <aside class="analytics-consent" data-analytics-consent-panel hidden role="region" aria-labelledby="analytics-consent-title" data-pagefind-ignore>
-    <h2 id="analytics-consent-title">要允许匿名化的阅读统计吗？</h2>
-    <p>我使用 Google Analytics 了解哪些文章更有帮助。只有你同意后才会启用统计，不用于广告个性化。</p>
-    <div class="analytics-consent__actions">
-      <button type="button" data-consent-choice="rejected">仅必要</button>
-      <button type="button" data-consent-choice="accepted">允许统计</button>
-    </div>
-  </aside>
+  <dialog class="utility-dialog privacy-dialog" id="analytics-settings" aria-labelledby="analytics-title" data-pagefind-ignore>
+    <header class="utility-dialog__header">
+      <h2 id="analytics-title">隐私与统计</h2>
+      <form method="dialog">
+        <button class="icon-button" aria-label="关闭统计设置">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="m6 6 12 12M18 6 6 18" stroke-linecap="round" />
+          </svg>
+        </button>
+      </form>
+    </header>
+    <form class="privacy-form" data-analytics-form>
+      <p>统计默认关闭。开启后，Google Analytics 会处理页面访问、设备等使用信息，帮助我了解站点的阅读情况。</p>
+      <label class="privacy-choice" for="analytics-enabled">
+        <input id="analytics-enabled" type="checkbox" />
+        <span>允许阅读统计</span>
+      </label>
+      <p class="privacy-note">不启用广告个性化。你可以随时关闭统计，并清除本站的统计 Cookie。选择仅保存在当前浏览器。</p>
+      <p class="privacy-note"><a href="https://policies.google.com/technologies/partner-sites">Google 如何使用这些数据</a></p>
+      <div class="privacy-actions">
+        <button class="quiet-button" type="submit">保存选择</button>
+        <button class="text-button" type="button" data-close-analytics>取消</button>
+      </div>
+    </form>
+  </dialog>
 )}
 
-{analyticsEnabled && (
-  <script is:inline>
-    (() => {
-      const panel = document.querySelector("[data-analytics-consent-panel]");
-      if (!panel || !window.somlarAnalytics) return;
-      let returnFocus = null;
+<script>
+  import { createDialogController } from "@/lib/dialog";
 
-      const show = (trigger) => {
-        returnFocus = trigger ?? null;
-        panel.hidden = false;
-        if (trigger) panel.querySelector("button")?.focus();
-      };
-      const hide = () => {
-        panel.hidden = true;
-        returnFocus?.focus({ preventScroll: true });
-        returnFocus = null;
-      };
+  const analytics = (window as Window & {
+    somlarAnalytics?: {
+      readChoice(): "accepted" | "rejected" | null;
+      setChoice(choice: "accepted" | "rejected"): void;
+    };
+  }).somlarAnalytics;
+  const dialog = document.querySelector<HTMLDialogElement>("#analytics-settings");
+  const checkbox = dialog?.querySelector<HTMLInputElement>("#analytics-enabled");
+  const form = dialog?.querySelector<HTMLFormElement>("[data-analytics-form]");
 
-      panel.querySelectorAll("[data-consent-choice]").forEach((button) => {
-        button.addEventListener("click", () => {
-          window.somlarAnalytics.setChoice(button.dataset.consentChoice);
-          hide();
-        });
+  if (analytics && dialog && checkbox && form) {
+    const controller = createDialogController(dialog);
+    document.querySelectorAll<HTMLButtonElement>("[data-analytics-settings]").forEach((button) => {
+      button.hidden = false;
+      button.addEventListener("click", () => {
+        checkbox.checked = analytics.readChoice() === "accepted";
+        controller.open(button);
       });
-      document.querySelectorAll("[data-analytics-settings]").forEach((button) => {
-        button.addEventListener("click", () => show(button));
-      });
-      if (window.somlarAnalytics.readChoice() === null) show();
-    })();
-  </script>
-)}
+    });
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      analytics.setChoice(checkbox.checked ? "accepted" : "rejected");
+      controller.close();
+    });
+    dialog.querySelector("[data-close-analytics]")?.addEventListener("click", () => controller.close());
+  }
+</script>
 
 <style>
-  .analytics-consent {
-    margin-top: 1.5rem;
-    padding: 1rem;
-    border: 1px solid var(--reading-rule);
-  }
-
-  h2 {
-    margin: 0;
-    font-size: 1rem;
-    line-height: 1.5;
-  }
-
-  p {
-    margin: 0.5rem 0 0;
-    color: var(--reading-muted);
-    font-size: 0.9rem;
-  }
-
-  .analytics-consent__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 1rem;
-  }
-
-  button {
-    min-height: 44px;
-    padding: 0.35rem 0.75rem;
-    border: 1px solid #aaa;
-    border-radius: 3px;
-    color: inherit;
-    background: #fff;
-    font-size: 0.9rem;
-    cursor: pointer;
-  }
-
-  button[data-consent-choice="accepted"] {
-    border-color: var(--reading-link);
-    color: var(--reading-link);
-  }
+  .privacy-dialog { --dialog-width: 28rem; }
+  .privacy-form { overflow-y: auto; padding: 1.5rem; }
+  .privacy-form > p { margin-bottom: 1rem; font-size: 0.9375rem; line-height: 1.85; }
+  .privacy-choice { display: flex; align-items: center; gap: 0.75rem; min-height: 44px; margin-block: 1.25rem; cursor: pointer; }
+  .privacy-choice input { width: 18px; height: 18px; margin: 0; accent-color: var(--reading-link); }
+  .privacy-form .privacy-note { color: var(--reading-muted); font-size: 0.8125rem; }
+  .privacy-actions { display: flex; align-items: center; gap: 1.5rem; margin-top: 1.5rem; }
+  .quiet-button { min-height: 44px; padding: 0.5rem 1rem; border: 1px solid #b4bfc6; border-radius: 4px; color: var(--reading-link); background: #fff; cursor: pointer; }
+  @media (max-width: 600px) { .privacy-form { padding: 1.25rem; } }
 </style>

@@ -8,95 +8,79 @@ const measurementId = siteConfig.analytics.measurementId;
   <script is:inline define:vars={{ measurementId }}>
     (() => {
       const consentKey = "somlar.analytics-consent.v1";
-      const accepted = "accepted";
-      const rejected = "rejected";
+      const disableKey = "ga-disable-" + measurementId;
+      let memoryChoice = null;
 
       const readChoice = () => {
         try {
-          const value = localStorage.getItem(consentKey);
-          return value === accepted || value === rejected ? value : null;
+          const value = memoryChoice ?? localStorage.getItem(consentKey);
+          return value === "accepted" || value === "rejected" ? value : null;
         } catch {
-          return null;
+          return memoryChoice;
         }
       };
 
       const writeChoice = (value) => {
-        try {
-          localStorage.setItem(consentKey, value);
-        } catch {
-          // The current page still honors the choice when storage is blocked.
-        }
+        memoryChoice = value;
+        try { localStorage.setItem(consentKey, value); } catch {}
       };
 
       const clearAnalyticsCookies = () => {
-        const cookieNames = document.cookie
-          .split(";")
+        const names = document.cookie.split(";")
           .map((cookie) => cookie.split("=")[0].trim())
           .filter((name) => name === "_ga" || name.startsWith("_ga_"));
-
-        for (const name of cookieNames) {
-          const base = `${name}=; Max-Age=0; Path=/; SameSite=Lax`;
+        const parts = location.hostname.split(".");
+        const domains = parts.slice(0, -1).map((_, index) => parts.slice(index).join("."));
+        for (const name of names) {
+          const base = name + "=; Max-Age=0; Path=/; SameSite=Lax";
           document.cookie = base;
-          document.cookie = `${base}; Domain=${location.hostname}`;
-          document.cookie = `${base}; Domain=.${location.hostname}`;
+          for (const domain of domains) document.cookie = base + "; Domain=." + domain;
         }
       };
 
       const load = () => {
         if (window.__somlarGaLoaded) return;
         window.__somlarGaLoaded = true;
+        window[disableKey] = false;
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function () { window.dataLayer.push(arguments); };
+        window.gtag("consent", "default", {
+          analytics_storage: "granted",
+          ad_storage: "denied",
+          ad_user_data: "denied",
+          ad_personalization: "denied",
+        });
+        window.gtag("js", new Date());
+        window.gtag("config", measurementId, {
+          allow_google_signals: false,
+          allow_ad_personalization_signals: false,
+        });
 
         const loader = document.createElement("script");
-        loader.type = "text/partytown";
         loader.async = true;
-        loader.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
+        loader.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(measurementId);
         loader.dataset.somlarGa = "loader";
-
-        const setup = document.createElement("script");
-        setup.type = "text/partytown";
-        setup.dataset.somlarGa = "setup";
-        setup.textContent = `
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){ dataLayer.push(arguments); }
-          gtag("consent", "default", {
-            analytics_storage: "granted",
-            ad_storage: "denied",
-            ad_user_data: "denied",
-            ad_personalization: "denied"
-          });
-          gtag("js", new Date());
-          gtag("config", ${JSON.stringify(measurementId)});
-        `;
-
-        document.head.append(loader, setup);
-        window.dispatchEvent(new CustomEvent("ptupdate"));
+        document.head.append(loader);
       };
 
       const setChoice = (value) => {
-        const previous = readChoice();
+        if (value !== "accepted" && value !== "rejected") return;
         writeChoice(value);
+        window[disableKey] = value !== "accepted";
         document.documentElement.dataset.analyticsConsent = value;
 
-        if (value === accepted) {
-          load();
-        } else {
-          clearAnalyticsCookies();
-        }
+        if (value === "accepted") load();
+        else clearAnalyticsCookies();
 
-        window.dispatchEvent(new CustomEvent("somlar:analytics-consent", {
-          detail: { value },
-        }));
-
-        if (value === rejected && previous === accepted) {
-          location.reload();
-        }
+        window.dispatchEvent(new CustomEvent("somlar:analytics-consent", { detail: { value } }));
       };
 
       window.somlarAnalytics = { readChoice, setChoice };
-
       const choice = readChoice();
+      window[disableKey] = choice !== "accepted";
       document.documentElement.dataset.analyticsConsent = choice ?? "unset";
-      if (choice === accepted) load();
+      if (choice === "accepted") load();
+      else clearAnalyticsCookies();
     })();
   </script>
 )}

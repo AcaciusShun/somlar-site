@@ -9,8 +9,8 @@ const friends = [
 <ReadingLayout title="Friends" description="友情链接，和一些值得慢慢读的个人站点。">
   <h1>朋友们</h1>
   <p>一些值得慢慢读的个人站点。</p>
-  <ul>
-    {friends.map((friend) => <li><a href={friend.url}>{friend.name}</a>：{friend.desc}</li>)}
+  <ul class="friend-list">
+    {friends.map((friend) => <li><a href={friend.url}>{friend.name}</a><span>{friend.desc}</span></li>)}
   </ul>
   <p>如果你也在维护一个长期更新的个人站点，欢迎<a href="mailto:contact@somlar.com">联系我</a>交换链接。</p>
 </ReadingLayout>

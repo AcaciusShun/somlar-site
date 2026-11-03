@@ -22,12 +22,17 @@ export function getAllTags(
 }
 
 export function readingTime(content: string): string {
+  const text = content
+    .replace(/`{3}[\s\S]*?`{3}/g, " ")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/https?:\/\/\S+|<[^>]*>/g, " ");
   const CJK = /[一-鿿㐀-䶿]/g;
-  const cjkCount = (content.match(CJK) || []).length;
-  const stripped = content.replace(CJK, " ");
-  const wordCount = stripped.split(/\s+/).filter(Boolean).length;
+  const cjkCount = (text.match(CJK) || []).length;
+  const stripped = text.replace(CJK, " ");
+  const wordCount = (stripped.match(/[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*/g) || []).length;
   const minutes = Math.ceil((cjkCount / 300 + wordCount / 200));
-  return `${Math.max(1, minutes)} min`;
+  return "约 " + Math.max(1, minutes) + " 分钟";
 }
 
 export function formatDate(date: Date): string {

@@ -1,26 +1,27 @@
-<details class="reading-search" id="search" data-pagefind-ignore data-dev={import.meta.env.DEV ? "true" : undefined}>
-  <summary>搜索文章</summary>
+<section class="reading-search" id="search" aria-label="文章搜索" data-pagefind-ignore data-dev={import.meta.env.DEV ? "true" : undefined}>
   <form class="search-content" role="search">
-    <label for="reading-search-input">输入关键词</label>
+    <label class="visually-hidden" for="reading-search-input">搜索文章</label>
     <div class="search-input-row">
-      <input id="reading-search-input" type="search" autocomplete="off" autocapitalize="none" enterkeyhint="search" placeholder="例如：Mastodon、阅读、AI" />
-      <button class="text-button" type="submit">搜索</button>
+      <input id="reading-search-input" type="search" autocomplete="off" autocapitalize="none" enterkeyhint="search" placeholder="搜索文章…" />
+      <button class="text-button search-clear" type="reset" hidden>清除</button>
     </div>
     <p class="search-status muted" role="status" aria-live="polite"></p>
     <ul class="search-results"></ul>
     <noscript><p>搜索需要 JavaScript。你也可以直接浏览下面的年度文章列表。</p></noscript>
   </form>
-</details>
+</section>
 
 <!-- Keep the runtime Pagefind import outside Vite's inline-module preloader. -->
 <script is:inline type="module">
-  const details = document.querySelector(".reading-search");
+  const searchRegion = document.querySelector(".reading-search");
   const input = document.querySelector("#reading-search-input");
   const status = document.querySelector(".search-status");
   const results = document.querySelector(".search-results");
-  const form = details?.querySelector("form");
+  const form = searchRegion?.querySelector("form");
+  const clear = form?.querySelector("[type=reset]");
+  const archive = document.querySelector("#blog-archive");
 
-  if (details && input && status && results) {
+  if (searchRegion && input && status && results) {
     let indexPromise;
     let requestId = 0;
     let timer;
@@ -41,6 +42,8 @@
 
     const search = async (query, id) => {
       results.replaceChildren();
+      if (archive) archive.hidden = Boolean(query);
+      if (clear) clear.hidden = !query;
       if (!query) {
         status.textContent = "";
         return;
@@ -54,7 +57,7 @@
         if (id !== requestId) return;
 
         status.textContent = response.results.length
-          ? `找到 ${response.results.length} 篇文章${response.results.length > 10 ? "，显示前 10 篇" : ""}。`
+          ? `${response.results.length} 篇匹配文章${response.results.length > 10 ? "，显示前 10 篇" : ""}`
           : "没有找到相关的文章，试试其他关键词。";
 
         for (const page of pages) {
@@ -70,7 +73,8 @@
         }
       } catch {
         if (id !== requestId) return;
-        status.textContent = details.dataset.dev === "true"
+        if (archive) archive.hidden = false;
+        status.textContent = searchRegion.dataset.dev === "true"
           ? "开发预览中没有搜索索引，请在构建后的预览中使用搜索。"
           : "暂时无法加载搜索，请稍后再试。也可以浏览下方的年度列表。";
       }
@@ -83,6 +87,14 @@
       timer = setTimeout(() => search(query, id), 180);
     });
 
+    form?.addEventListener("reset", (event) => {
+      event.preventDefault();
+      clearTimeout(timer);
+      input.value = "";
+      search("", ++requestId);
+      input.focus({ preventScroll: true });
+    });
+
     form?.addEventListener("submit", (event) => {
       event.preventDefault();
       clearTimeout(timer);
@@ -92,7 +104,6 @@
 
     const openFromHash = () => {
       if (location.hash === "#search") {
-        details.open = true;
         input.focus({ preventScroll: true });
       }
     };
@@ -106,53 +117,60 @@
     margin-block: 0 1.5rem;
   }
 
-  summary {
-    color: var(--reading-link);
-    text-decoration: underline;
-    text-underline-offset: 0.18em;
-  }
-
-  .search-content {
-    margin-top: 1rem;
-  }
-
-  label {
-    display: block;
-    margin-bottom: 0.4rem;
-  }
-
   input {
     width: 100%;
-    padding: 0.5rem 0.65rem;
-    border: 1px solid #aaa;
-    border-radius: 3px;
+    padding: 0.5rem 0;
+    border: 0;
+    border-bottom: 1px solid #8b969e;
+    border-radius: 0;
     color: inherit;
     background: #fff;
     min-width: 0;
-    min-height: 46px;
+    min-height: 44px;
   }
 
+  .search-clear { font-size: 0.875rem; }
+
   .search-input-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    display: flex;
+    align-items: center;
     gap: 0.75rem;
   }
 
+  .search-input-row input { flex: 1; }
+  input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+
   .search-status {
     margin-block: 0.75rem;
-    font-size: 0.9rem;
+    font-size: 0.8125rem;
   }
 
+  .search-status:empty,
+  .search-results:empty { display: none; }
+
   .search-results {
-    padding-left: 1.25em;
+    padding: 0;
+    list-style: none;
+    margin-block: 1.5rem 0;
   }
 
   .search-results :global(li) {
-    margin-bottom: 1rem;
+    margin-bottom: 1.75rem;
   }
 
+  .search-results :global(a) { color: inherit; text-decoration: none; }
+
   .search-results :global(p) {
-    margin: 0.25rem 0 0;
-    font-size: 0.9rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    margin: 0.4rem 0 0;
+    font-size: 0.875rem;
+    line-height: 1.8;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .search-results :global(a:hover) { color: var(--reading-link); text-decoration: underline; }
   }
 </style>

@@ -28,35 +28,48 @@ const months = [...byMonth.entries()].map(([key, entries]) => {
 });
 ---
 
-<ReadingLayout title="Library" description="读过、看过、听过和玩过的记录与短评。">
-  <h1>书影音</h1>
-  <p>读过、看过、听过和玩过的记录。按时间排列，点击标题可在 <a href="https://neodb.social">NeoDB</a> 查看。</p>
+<ReadingLayout title="Library" description="书籍、电影、剧集、音乐和游戏的个人记录与短评。">
+  <h1>书影音与游戏</h1>
+  <p>从 <a href="https://neodb.social">NeoDB</a> 同步的个人记录，按标记时间排列。</p>
 
-  <form class="library-filters" id="library-filters" role="search" hidden>
+  <div class="library-tools">
+  <details class="library-filter-panel" id="library-filter-panel" hidden>
+    <summary aria-labelledby="library-filter-label">
+      <span class="library-filter-label" id="library-filter-label">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="m6 9 6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        筛选
+      </span>
+      <span class="library-selection muted" id="library-selection" hidden></span>
+    </summary>
+    <form class="library-filters" id="library-filters" role="search" hidden>
     <div class="library-fields">
       <label class="library-query" for="library-search">
-        搜索
-        <input id="library-search" type="search" placeholder="标题、短评或标签" autocomplete="off" />
+        <span class="visually-hidden">搜索标题、短评或标签</span>
+        <input id="library-search" type="search" placeholder="搜索书影音…" autocomplete="off" autocapitalize="none" enterkeyhint="search" />
       </label>
       <label for="library-category">
-        类型
+        <span class="visually-hidden">类型</span>
         <select id="library-category">
           {categoryOptions.map((option) => <option value={option.value}>{option.label}</option>)}
         </select>
       </label>
       <label for="library-shelf">
-        状态
+        <span class="visually-hidden">状态</span>
         <select id="library-shelf">
           <option value="">全部状态</option>
           {shelfOptions.map(([value, label]) => <option value={value}>{label}</option>)}
         </select>
       </label>
+    <button class="text-button library-reset" type="reset" hidden>清除</button>
     </div>
-    <button class="text-button" type="reset">重置筛选</button>
-  </form>
+    </form>
+  </details>
 
-  <p class="muted" id="library-count" role="status" aria-live="polite">共 {items.length} 条记录。</p>
-  <p id="library-empty" hidden>没有匹配的记录。可以更换关键词或重置筛选。</p>
+  <span class="library-count muted" id="library-count" role="status" aria-live="polite">{items.length} 条</span>
+  </div>
+  <p id="library-empty" hidden>没有匹配的记录。<button class="text-button" type="button" id="library-empty-reset">显示全部记录</button></p>
 
   {months.map((month) => (
     <section class="library-month" aria-labelledby={`month-${month.key}`}>
@@ -97,10 +110,15 @@ const months = [...byMonth.entries()].map(([key, entries]) => {
 
 <script>
   const form = document.querySelector<HTMLFormElement>("#library-filters");
+  const filterPanel = document.querySelector<HTMLDetailsElement>("#library-filter-panel");
+  // Width and input capability stay stable when the software keyboard changes height.
+  const compactLayout = matchMedia("(max-width: 600px), (max-width: 900px) and (pointer: coarse)");
   const search = document.querySelector<HTMLInputElement>("#library-search");
   const category = document.querySelector<HTMLSelectElement>("#library-category");
   const shelf = document.querySelector<HTMLSelectElement>("#library-shelf");
   const count = document.querySelector<HTMLElement>("#library-count");
+  const selection = document.querySelector<HTMLElement>("#library-selection");
+  const reset = form?.querySelector<HTMLButtonElement>("[type=reset]");
   const empty = document.querySelector<HTMLElement>("#library-empty");
   const normalize = (value: string) => value.normalize("NFKC").toLocaleLowerCase();
   const entries = [...document.querySelectorAll<HTMLElement>("[data-library-entry]")].map((node) => ({
@@ -136,8 +154,17 @@ const months = [...byMonth.entries()].map(([key, entries]) => {
         month.hidden = !month.querySelector("[data-library-entry]:not([hidden])");
       }
       count.textContent = visible === entries.length
-        ? `共 ${entries.length} 条记录。`
-        : `显示 ${visible} / ${entries.length} 条记录。`;
+        ? `${entries.length} 条`
+        : `${visible} / ${entries.length} 条`;
+      if (reset) reset.hidden = !query && !category.value && !shelf.value;
+      if (selection) {
+        selection.textContent = [
+          category.value && category.selectedOptions[0]?.text,
+          shelf.value && shelf.selectedOptions[0]?.text,
+          search.value.trim() && `“${search.value.trim()}”`,
+        ].filter(Boolean).join(" · ");
+        selection.hidden = !selection.textContent;
+      }
       empty.hidden = visible > 0;
     };
 
@@ -147,39 +174,78 @@ const months = [...byMonth.entries()].map(([key, entries]) => {
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       applyFilters();
+      if (compactLayout.matches && filterPanel) {
+        filterPanel.open = false;
+        filterPanel.querySelector("summary")?.focus({ preventScroll: true });
+      } else if (matchMedia("(pointer: coarse)").matches) {
+        search.blur();
+      }
     });
     form.addEventListener("reset", (event) => {
       event.preventDefault();
+      const resetHadFocus = document.activeElement === reset;
       search.value = "";
       category.value = "";
       shelf.value = "";
       applyFilters();
+      if (resetHadFocus) search.focus({ preventScroll: true });
+    });
+    document.querySelector("#library-empty-reset")?.addEventListener("click", () => {
+      form.reset();
+      if (compactLayout.matches) filterPanel?.querySelector("summary")?.focus({ preventScroll: true });
+      else {
+        if (filterPanel) filterPanel.open = true;
+        search.focus({ preventScroll: true });
+      }
     });
     form.hidden = false;
+    if (filterPanel) filterPanel.hidden = false;
     applyFilters();
   }
 </script>
 
 <style>
-  .library-filters {
+  .library-tools {
+    position: relative;
+    min-height: 44px;
     margin-block: 1.5rem 1rem;
+  }
+
+  .library-filter-panel > summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    min-height: 44px;
+    padding-right: 7.5rem;
+    color: var(--reading-link);
+    font-size: 0.875rem;
+    list-style: none;
+  }
+
+  .library-filter-panel > summary::-webkit-details-marker { display: none; }
+  .library-filter-label { display: inline-flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
+  .library-filter-panel[open] .library-filter-label svg { transform: rotate(180deg); }
+  .library-selection { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .library-filters {
+    margin-block: 0.5rem 1rem;
   }
 
   .library-fields {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 0.4rem;
+    align-items: center;
+    gap: 0 1.5rem;
   }
 
   label {
-    flex: 1 1 8rem;
-    font-size: 0.9rem;
+    min-width: 0;
   }
 
-  .library-query {
-    flex-basis: 16rem;
-  }
+  .library-query { flex: 1 1 14rem; }
+  label[for=library-category] { flex: 0 0 8.5rem; }
+  label[for=library-shelf] { flex: 0 0 7rem; }
 
   input,
   select {
@@ -187,21 +253,28 @@ const months = [...byMonth.entries()].map(([key, entries]) => {
     width: 100%;
     min-width: 0;
     min-height: 44px;
-    margin-top: 0.35rem;
-    padding: 0.4rem 0.5rem;
-    border: 1px solid #aaa;
-    border-radius: 3px;
+    margin: 0;
+    padding: 0.4rem 0;
+    border: 0;
+    border-radius: 0;
     color: inherit;
-    background: #fff;
+    background-color: transparent;
   }
 
+  input { border-bottom: 1px solid #8b969e; }
+  select { cursor: pointer; }
+  .library-reset { font-size: 0.875rem; }
+
   .library-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.75rem 2.5rem;
     list-style: none;
     padding: 0;
   }
 
   .library-entry {
-    margin: 0 0 1.6rem;
+    margin: 0;
     display: grid;
     grid-template-columns: 72px minmax(0, 1fr);
     align-items: start;
@@ -241,9 +314,12 @@ const months = [...byMonth.entries()].map(([key, entries]) => {
   .library-entry h3 {
     margin: 0 0 0.5rem;
     font-size: 1rem;
-    text-decoration: underline;
-    text-underline-offset: 0.18em;
-    text-decoration-thickness: 1px;
+    font-weight: 500;
+  }
+
+  .library-entry h3 a {
+    color: var(--reading-link);
+    text-decoration: none;
   }
 
   .library-meta {
@@ -252,7 +328,7 @@ const months = [...byMonth.entries()].map(([key, entries]) => {
     gap: 0 1rem;
     margin: 0;
     color: var(--reading-muted);
-    font-size: 0.9rem;
+    font-size: 0.8125rem;
   }
 
   .library-meta time {
@@ -265,5 +341,78 @@ const months = [...byMonth.entries()].map(([key, entries]) => {
 
   .library-review summary {
     color: var(--reading-link);
+  }
+
+  .library-count {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+  }
+  .library-month { margin-top: 2.5rem; }
+  .library-month h2 {
+    margin: 0 0 1.25rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--reading-rule);
+    font-family: inherit;
+    color: var(--reading-muted);
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .library-entry h3 a:hover { color: var(--reading-link); text-decoration: underline; }
+  }
+
+  @media (max-width: 600px), (max-width: 900px) and (pointer: coarse) {
+    .library-fields {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+      gap: 0.5rem 1rem;
+    }
+
+    .library-query {
+      grid-column: 1 / -1;
+    }
+
+  }
+
+  @media (max-width: 699px) {
+    .library-list { display: block; }
+    .library-entry { margin-bottom: 1.5rem; }
+  }
+
+  @media (max-width: 600px) {
+    .library-entry {
+      grid-template-columns: 64px minmax(0, 1fr);
+      gap: 0.85rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .library-cover,
+    .library-cover img,
+    .library-cover-fallback {
+      width: 64px;
+      min-height: 96px;
+    }
+
+    .library-cover img,
+    .library-cover-fallback {
+      height: 96px;
+    }
+
+    .library-meta {
+      gap: 0 0.75rem;
+      font-size: 0.8125rem;
+    }
+
+    .library-entry h3 {
+      margin-bottom: 0.35rem;
+    }
   }
 </style>

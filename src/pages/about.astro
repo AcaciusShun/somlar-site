@@ -1,31 +1,35 @@
 ---
 import ReadingLayout from "@/layouts/ReadingLayout.astro";
+import { siteConfig } from "@/lib/config";
 
 const skills = [
-  { group: "语言", items: ["TypeScript", "JavaScript", "Python", "HTML5", "CSS3"] },
-  { group: "框架", items: ["React", "Vue", "Next.js", "Astro", "React Native", "Expo", "FastAPI", "Node.js", "Tailwind CSS"] },
+  { group: "语言", items: ["Swift", "TypeScript", "JavaScript", "Python", "HTML", "CSS"] },
+  { group: "框架", items: ["SwiftUI", "React", "Vue", "Next.js", "Astro", "React Native", "Expo", "FastAPI", "Node.js", "Tailwind CSS"] },
   { group: "数据", items: ["MongoDB", "Redis"] },
   { group: "工具与部署", items: ["Docker", "Vite", "Webpack", "Cloudflare", "GitHub Actions"] },
   { group: "兴趣", items: ["系统设计", "字体排印", "RSS / Fediverse"] },
 ];
 
-const timeline = [
-  { year: "2026", text: "搭建 Somlar，作为长期写作、记录和分享的个人站点。" },
-  { year: "2025", text: "创建自托管的 Mastodon 社区 Somincola。" },
-  { year: "2024", text: "完成香港科技大学的全栈 Web 开发系列课程。" },
+const experiences = [
+  "开发原生 Mastodon iOS 客户端 Moro。",
+  "创建并维护 Mastodon 社区 Somincola Garden。",
+  "用 Astro 搭建并维护个人站点。",
+  "完成香港科技大学在 Coursera 开设的全栈 Web 开发系列课程。",
 ];
 ---
 
-<ReadingLayout title="About" description="关于 acacius。">
+<ReadingLayout title="About" description="我是 acacius，开发 Web 和 iOS 应用，也维护 Mastodon 社区 Somincola Garden。">
   <h1>关于我</h1>
-  <p>我是 acacius。Somlar 是这个站点的名字。</p>
-  <p>写代码，也写一些生活里的事。喜欢做有用的东西，记录真实的想法，把系统和文字都慢慢打磨好。</p>
-  <p>这里放我的技术实践、阅读笔记、日常随想，以及一些小项目和实验。</p>
+  <p>我是 acacius。</p>
+  <p>
+    平时做 Web 和 iOS 应用，也维护 Mastodon 社区 <a href={siteConfig.links.community}>Somincola Garden</a>。
+    这里记录开发中遇到的问题、阅读笔记和日常见闻。
+  </p>
 
   <section aria-labelledby="moro-progress">
     <h2 id="moro-progress">正在开发 Moro</h2>
     <p>
-      <a href="https://moro.somincola.com/">Moro</a> 是我用 Swift 和 SwiftUI 开发的原生 Mastodon iOS 客户端。
+      <a href={siteConfig.links.moro}>Moro</a> 是我用 Swift 和 SwiftUI 开发的原生 Mastodon iOS 客户端。
       目前已支持时间线浏览、发帖、搜索、通知、个人主页和多账号切换等主要功能。
     </p>
     <p>
@@ -35,7 +39,7 @@ const timeline = [
   </section>
 
   <section aria-labelledby="stack">
-    <h2 id="stack">常用技术与兴趣</h2>
+    <h2 id="stack">技术与兴趣</h2>
     <dl class="profile-details">
       {skills.map((group) => (
         <>
@@ -49,7 +53,7 @@ const timeline = [
   <section aria-labelledby="timeline">
     <h2 id="timeline">一些经历</h2>
     <ul>
-      {timeline.map((item) => <li><strong>{item.year}</strong>：{item.text}</li>)}
+      {experiences.map((text) => <li>{text}</li>)}
     </ul>
   </section>
 

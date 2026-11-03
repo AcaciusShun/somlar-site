@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test": "node --test",
     "dev": "astro dev",
     "build": "astro build && npx pagefind --site dist",
     "preview": "astro preview",
@@ -11,7 +12,6 @@
     "sync:neodb": "node --env-file-if-exists=.env scripts/sync-neodb.mjs"
   },
   "dependencies": {
-    "@astrojs/partytown": "^2.1.7",
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.3",
     "astro": "^7.2.9",

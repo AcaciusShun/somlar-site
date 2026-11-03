@@ -3,7 +3,13 @@ import ReadingLayout from "@/layouts/ReadingLayout.astro";
 ---
 
 <ReadingLayout title="404" description="没有找到这个页面。" noindex>
-  <h1>404</h1>
-  <p>没有找到这个页面。链接可能有误，或内容已经移动。</p>
-  <p>可以回到<a href="/">首页</a>，浏览<a href="/blog">全部文章</a>，或<a href="/blog#search">搜索文章</a>。</p>
+  <section class="not-found" aria-labelledby="not-found-title">
+    <h1 id="not-found-title">404</h1>
+    <p>没有找到这个页面。链接可能有误，或内容已经移动。</p>
+    <nav class="empty-page-links" aria-label="继续浏览">
+      <a href="/">回到首页</a>
+      <a href="/blog">全部文章</a>
+      <a href="/blog#search">搜索文章</a>
+    </nav>
+  </section>
 </ReadingLayout>

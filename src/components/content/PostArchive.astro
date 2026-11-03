@@ -18,6 +18,7 @@ for (const post of posts) {
 const years = [...grouped.keys()].sort((a, b) => Number(b) - Number(a));
 ---
 
+<div class="post-archive">
 {years.length > 1 && (
   <nav class="year-nav" aria-label="按年份浏览">
     {years.map((year) => <a href={`#year-${year}`}>{year}</a>)}
@@ -32,3 +33,16 @@ const years = [...grouped.keys()].sort((a, b) => Number(b) - Number(a));
 ))}
 
 {posts.length === 0 && <p>还没有文章。</p>}
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>(".post-archive").forEach((archive) => {
+    const nav = archive.querySelector<HTMLElement>(".year-nav");
+    if (!nav) return;
+    const updateClearance = () => {
+      archive.style.setProperty("--year-nav-height", `${nav.getBoundingClientRect().height}px`);
+    };
+    new ResizeObserver(updateClearance).observe(nav);
+    updateClearance();
+  });
+</script>

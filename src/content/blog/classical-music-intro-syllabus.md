@@ -5,7 +5,7 @@ slug: "classical-music-intro-syllabus"
 tags: ["Classical-Music", "Notes"]
 ---
 
-# Syllabus 教学大纲
+<p class="muted" id="syllabus-教学大纲">Syllabus 教学大纲</p>
 
 ## Course Syllabus 课程纲要
 

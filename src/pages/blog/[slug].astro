@@ -1,10 +1,11 @@
 ---
 import { render } from "astro:content";
 import ReadingLayout from "@/layouts/ReadingLayout.astro";
-import { getPublishedPosts, formatISODate, postSlug } from "@/lib/blog";
+import { getPublishedPosts, formatISODate, postSlug, readingTime } from "@/lib/blog";
 import { siteConfig } from "@/lib/config";
 import TwikooComments from "@/components/interactive/TwikooComments.astro";
 import ArticleEnhancements from "@/components/interactive/ArticleEnhancements.astro";
+import ReadingTools from "@/components/interactive/ReadingTools.astro";
 
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
@@ -24,18 +25,21 @@ const toc = headings.filter((heading) => heading.depth <= 3);
   description={post.data.description}
   ogType="article"
   ogImage={post.data.cover?.image}
+  ogImageAlt={post.data.cover?.alt}
+  ogImageWidth={post.data.cover?.width}
+  ogImageHeight={post.data.cover?.height}
   publishedTime={post.data.date.toISOString()}
+  modifiedTime={post.data.lastmod?.toISOString()}
   tags={post.data.tags}
 >
   <article data-pagefind-body>
     <header class="article-header">
-      <h1 data-pagefind-meta="title">{post.data.title}</h1>
-      <time class="article-date" datetime={post.data.date.toISOString()}>{formatISODate(post.data.date)}</time>
-      {post.data.cover && (
-        <figure class="article-cover">
-          <img src={post.data.cover.image} alt={post.data.cover.alt} />
-        </figure>
-      )}
+      <h1 id="article-title" data-pagefind-meta="title">{post.data.title}</h1>
+      <p class="article-meta" data-pagefind-ignore>
+        <a href="/about" rel="author">{siteConfig.author}</a>
+        <time class="article-date" datetime={post.data.date.toISOString()}>{formatISODate(post.data.date)}</time>
+        <span>{readingTime(post.body || "")}</span>
+      </p>
     </header>
 
     {toc.length >= 3 && (
@@ -54,6 +58,16 @@ const toc = headings.filter((heading) => heading.depth <= 3);
     )}
 
     <div class="reading-prose">
+      {post.data.cover && (
+        <figure class="article-cover">
+          <picture>
+            {post.data.cover.srcset && (
+              <source srcset={post.data.cover.srcset} sizes="(max-width: 600px) 90vw, (max-width: 748px) calc(100vw - 48px), 700px" type="image/webp" />
+            )}
+            <img src={post.data.cover.image} alt={post.data.cover.alt} width={post.data.cover.width} height={post.data.cover.height} data-full-image={post.data.cover.image} decoding="async" />
+          </picture>
+        </figure>
+      )}
       <Content />
     </div>
 
@@ -69,8 +83,8 @@ const toc = headings.filter((heading) => heading.depth <= 3);
       <p><a href="/blog">全部文章</a></p>
       {(prev || next) && (
         <nav class="post-navigation" aria-label="相邻文章">
-          {prev && <p>上一篇：<a href={`/blog/${postSlug(prev)}`}>{prev.data.title}</a></p>}
-          {next && <p>下一篇：<a href={`/blog/${postSlug(next)}`}>{next.data.title}</a></p>}
+          {prev && <a href={"/blog/" + postSlug(prev)}><span>上一篇</span>{prev.data.title}</a>}
+          {next && <a href={"/blog/" + postSlug(next)}><span>下一篇</span>{next.data.title}</a>}
         </nav>
       )}
     </footer>
@@ -83,4 +97,5 @@ const toc = headings.filter((heading) => heading.depth <= 3);
     )}
   </article>
   <ArticleEnhancements />
+  <ReadingTools title={post.data.title} headings={toc} />
 </ReadingLayout>

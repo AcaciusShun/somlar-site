@@ -3,25 +3,27 @@ interface Resource {
   name: string;
   desc: string;
   tech: string[];
-  repo: string;
+  repo?: string;
   url?: string;
 }
 
 interface Props {
   items: Resource[];
+  headingLevel?: 2 | 3;
 }
 
-const { items } = Astro.props;
+const { items, headingLevel = 3 } = Astro.props;
+const Heading = headingLevel === 2 ? "h2" : "h3";
 ---
 
 <ul class="resource-list">
   {items.map((item) => (
     <li>
-      <h3><a href={item.url || item.repo}>{item.name}</a></h3>
+      <Heading><a href={item.url || item.repo}>{item.name}</a></Heading>
       <p>{item.desc}</p>
       <p class="resource-meta">
         <span>{item.tech.join("、")}</span>
-        <a href={item.repo} aria-label={`${item.name} 源码`}>源码</a>
+        {item.repo && <a href={item.repo} aria-label={`${item.name} 源码`}>源码</a>}
       </p>
     </li>
   ))}

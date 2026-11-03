@@ -6,6 +6,9 @@ tags: ["Reading-Notes"]
 cover:
   image: "https://cdn.somlar.com/2026/05/476e815da4aaf5f2bc1cd88e0e6e6302.jpg"
   alt: ""
+  width: 6016
+  height: 4016
+  srcset: "/images/articles/on-liberty-640.webp 640w, /images/articles/on-liberty-1024.webp 1024w, /images/articles/on-liberty-1536.webp 1536w"
 ---
 
 作者: 约翰•穆勒

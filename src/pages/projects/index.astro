@@ -1,10 +1,18 @@
 ---
 import ReadingLayout from "@/layouts/ReadingLayout.astro";
 import ResourceList from "@/components/content/ResourceList.astro";
+import { siteConfig } from "@/lib/config";
 
 const projects = [
   {
-    name: "Somlar",
+    name: "Moro",
+    desc: "使用 Swift 和 SwiftUI 开发的 Mastodon iOS 客户端，支持多账号、时间线、发帖、搜索和通知。",
+    tech: ["Swift", "SwiftUI", "iOS"],
+    url: siteConfig.links.moro,
+    category: "personal",
+  },
+  {
+    name: siteConfig.title,
     desc: "这个站点。用 Astro 构建，记录技术实践、阅读笔记与日常随想。",
     tech: ["Astro", "TypeScript", "CSS"],
     repo: "https://github.com/AcaciusShun/somlar-site",
@@ -12,11 +20,10 @@ const projects = [
     category: "personal",
   },
   {
-    name: "Somincola",
-    desc: "一个自托管的 Mastodon 社区，包含社区维护、内容管理与配套站点。",
+    name: "Somincola Garden",
+    desc: "一个自托管的中文 Mastodon 社区，包含节点维护、社区运营与配套站点。",
     tech: ["Ruby", "Astro", "Docker"],
-    repo: "https://github.com/somincola",
-    url: "https://somincola.org",
+    url: siteConfig.links.community,
     category: "personal",
   },
   {
@@ -24,13 +31,6 @@ const projects = [
     desc: "Mastodon 新闻机器人管理工具，自动聚合 RSS，并发布到多个机器人账号。",
     tech: ["Python", "FastAPI", "Docker"],
     repo: "https://github.com/somincola/mastodon-news-center",
-    category: "personal",
-  },
-  {
-    name: "Moro",
-    desc: "原生 Mastodon iOS 客户端，支持浏览时间线、发帖和通知。",
-    tech: ["Swift", "SwiftUI", "iOS"],
-    repo: "https://github.com/somincola/moro-ios",
     category: "personal",
   },
   {
@@ -49,7 +49,7 @@ const projects = [
   },
   {
     name: "Full-Stack Web & Mobile App",
-    desc: "Coursera 毕业项目：使用 Ionic / React Native 构建跨平台应用与配套后端。",
+    desc: "Coursera 结课项目：使用 Ionic / React Native 构建跨平台应用与配套后端。",
     tech: ["Ionic", "React Native", "HTML"],
     repo: "https://github.com/coursera-learn/Full-Stack-Web-and-Multiplatform-Mobile-App-",
     category: "course",
@@ -60,9 +60,9 @@ const personal = projects.filter((p) => p.category === "personal");
 const course = projects.filter((p) => p.category === "course");
 ---
 
-<ReadingLayout title="Projects" description="我的个人项目、开源工具与课程作品。">
+<ReadingLayout title="Projects" description="我做的应用、维护的服务，以及一些课程作品。">
   <h1>项目</h1>
-  <p>一些持续维护的项目，也有学习过程中做过的小作品。</p>
+  <p>我在做的应用、维护的服务，以及学习时留下的作品。</p>
 
   <section aria-labelledby="personal-projects">
     <h2 id="personal-projects">个人项目</h2>

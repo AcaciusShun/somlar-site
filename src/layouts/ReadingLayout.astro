@@ -9,7 +9,11 @@ interface Props {
   description?: string;
   ogType?: "website" | "article";
   ogImage?: string;
+  ogImageAlt?: string;
+  ogImageWidth?: number;
+  ogImageHeight?: number;
   publishedTime?: string;
+  modifiedTime?: string;
   tags?: string[];
   noindex?: boolean;
 }
@@ -55,7 +59,7 @@ const year = new Date().getFullYear();
           <a href={siteConfig.mastodon} rel="me">Mastodon</a>
           <a href="/friends">Friends</a>
           {siteConfig.analytics.measurementId && (
-            <button class="text-button" type="button" data-analytics-settings>阅读统计</button>
+            <button class="text-button" type="button" data-analytics-settings hidden>隐私与统计</button>
           )}
         </nav>
       </footer>

@@ -19,25 +19,36 @@ const envId = siteConfig.twikoo.envId;
 <script is:inline define:vars={{ envId, path, deferred }}>
   if (envId) {
     let started = false;
-    const initTwikoo = () => {
+    const initTwikoo = async () => {
       if (started) return;
       started = true;
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/twikoo@1.7.9/dist/twikoo.min.js";
-      script.onload = () => {
-        twikoo.init({
+      const container = document.getElementById("tcomment");
+      container.textContent = "正在加载评论…";
+      try {
+        const twikoo = await new Promise((resolve, reject) => {
+          if (window.twikoo?.init) return resolve(window.twikoo);
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/npm/twikoo@1.7.9/dist/twikoo.min.js";
+          script.onload = () => window.twikoo?.init
+            ? resolve(window.twikoo)
+            : reject(new Error("Comment script did not initialize"));
+          script.onerror = () => {
+            script.remove();
+            reject(new Error("Comment script could not be loaded"));
+          };
+          document.head.appendChild(script);
+        });
+        await twikoo.init({
           envId,
           el: "#tcomment",
           path,
           lang: "zh-CN",
         });
-      };
-      script.onerror = () => {
+      } catch (error) {
+        console.warn("[评论] 加载失败", error);
         started = false;
-        document.getElementById("tcomment").textContent = "评论暂时无法加载，请稍后重新展开。";
-        script.remove();
-      };
-      document.head.appendChild(script);
+        container.textContent = "评论暂时无法加载，请刷新页面后重试。";
+      }
     };
 
     const disclosure = deferred ? document.getElementById("tcomment")?.closest("details") : null;
@@ -45,6 +56,7 @@ const envId = siteConfig.twikoo.envId;
       disclosure.addEventListener("toggle", () => {
         if (disclosure.open) initTwikoo();
       });
+      if (disclosure.open) initTwikoo();
     } else if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", initTwikoo);
     } else {
@@ -68,8 +80,8 @@ const envId = siteConfig.twikoo.envId;
     font-size: max(1rem, 16px);
     color: inherit;
     background: #fff;
-    border: 1px solid var(--reading-rule);
-    border-radius: 3px;
+    border: 1px solid #8b969e;
+    border-radius: 4px;
   }
 
   .tk-input .el-input__inner:focus,
@@ -92,9 +104,24 @@ const envId = siteConfig.twikoo.envId;
   }
 
   .tk-content {
-    font-size: 0.95rem;
+    font-size: 1rem;
     line-height: 1.8;
     color: inherit;
+  }
+
+  .comments .tk-content img {
+    max-width: min(100%, 300px);
+    height: auto;
+  }
+
+  .comments .tk-content :is(pre, table) {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  .comments .tk-content table {
+    display: block;
   }
 
   .tk-nick {
@@ -111,5 +138,61 @@ const envId = siteConfig.twikoo.envId;
   .tk-comments-count {
     font-family: inherit;
     color: inherit;
+  }
+
+  .comments .tk-actions button,
+  .comments .tk-action-link { color: var(--reading-link); }
+
+  .comments :is(input, textarea, button):focus-visible {
+    outline: 2px solid var(--reading-link);
+    outline-offset: 3px;
+  }
+
+  @media (pointer: coarse) {
+    .comments .tk-submit .el-button,
+    .comments .tk-meta-input .el-input__inner {
+      min-height: 44px;
+    }
+
+    .comments .tk-comment .tk-actions,
+    .comments .tk-comment:hover .tk-actions {
+      display: inline-flex;
+      flex-wrap: wrap;
+    }
+
+    .comments .tk-actions button,
+    .comments .tk-action-link,
+    .comments .tk-submit-action-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    .comments .tk-submit-action-icon {
+      margin-right: 0;
+    }
+
+    .comments .tk-submit-action-icon:active { background: var(--reading-code); }
+    .comments .tk-submit-action-icon svg:hover { opacity: 1; }
+    .comments .tk-nick-link:hover { color: inherit; }
+    .comments .el-button:not(.is-disabled):hover {
+      color: var(--reading-link);
+      border-color: var(--reading-link);
+      background: #fff;
+    }
+
+    .comments .tk-row {
+      flex-wrap: wrap;
+    }
+
+    .comments .tk-action-link:not(.tk-liked):not(.tk-disliked) .tk-action-icon {
+      display: block;
+    }
+
+    .comments .tk-action-link:not(.tk-liked):not(.tk-disliked) .tk-action-icon-solid {
+      display: none;
+    }
   }
 </style>

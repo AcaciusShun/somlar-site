@@ -15,8 +15,10 @@ const { tag, posts } = Astro.props;
 ---
 
 <ReadingLayout title={tag} description={`标签「${tag}」下的文章。`}>
-  <p><a href="/blog">全部文章</a></p>
-  <h1>{tag}</h1>
-  <p class="muted">{posts.length} 篇文章。</p>
+  <p class="section-back"><a href="/blog">全部文章</a></p>
+  <header class="listing-header">
+    <h1>{tag}</h1>
+    <span class="muted">{posts.length} 篇文章</span>
+  </header>
   <PostArchive posts={posts} />
 </ReadingLayout>

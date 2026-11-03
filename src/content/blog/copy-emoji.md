@@ -24,7 +24,7 @@ categories: ["mastodon"]
 
 ------
 
-# 📥 一、使用开源脚本批量下载其他实例的表情
+## 📥 一、使用开源脚本批量下载其他实例的表情
 
 为了从其他 Mastodon 网站抓取表情，我们使用开源工具：
 
@@ -35,7 +35,7 @@ categories: ["mastodon"]
 
 ------
 
-## 1. 下载最新发布的二进制文件
+### 1. 下载最新发布的二进制文件
 
 进入 Release 页面：
 
@@ -51,19 +51,19 @@ https://github.com/Starainrt/emojidownloader/releases/download/v0.1.0/emoji_down
 
 ------
 
-## 2. 在服务器上下载脚本
+### 2. 在服务器上下载脚本
 
 ```
 wget https://github.com/Starainrt/emojidownloader/releases/download/v0.1.0/emoji_downloader_linux_x86_64
 ```
 
-## 3. 添加执行权限
+### 3. 添加执行权限
 
 ```
 chmod +x ./emoji_downloader_linux_x86_64
 ```
 
-## 4. 执行程序
+### 4. 执行程序
 
 ```
 ./emoji_downloader_linux_x86_64
@@ -94,7 +94,7 @@ chmod +x ./emoji_downloader_linux_x86_64
 
 ------
 
-# 📦 二、确认 Mastodon Web 容器名称
+## 📦 二、确认 Mastodon Web 容器名称
 
 使用 Docker Compose 时，Web 容器通常为：
 
@@ -110,7 +110,7 @@ docker ps --format "table {{.Names}}\t{{.Image}}"
 
 ------
 
-# 📤 三、批量上传表情包到容器
+## 📤 三、批量上传表情包到容器
 
 将所有 `.tar.gz` 文件复制进容器 `/tmp/` 目录：
 
@@ -131,7 +131,7 @@ done
 
 ------
 
-# 🎨 四、使用 tootctl 导入表情包
+## 🎨 四、使用 tootctl 导入表情包
 
 命令格式：
 
@@ -161,7 +161,7 @@ docker exec -it mastodon-web-1 bin/tootctl emoji import --category=McD /tmp/麦�
 
 ------
 
-# ✔️ 五、在后台检查导入结果
+## ✔️ 五、在后台检查导入结果
 
 访问：
 
@@ -173,7 +173,7 @@ https://你的域名/admin/custom_emojis
 
 ------
 
-# 🧹 六、可选：删除临时文件
+## 🧹 六、可选：删除临时文件
 
 ```
 docker exec -it mastodon-web-1 rm /tmp/*.tar.gz
@@ -181,7 +181,7 @@ docker exec -it mastodon-web-1 rm /tmp/*.tar.gz
 
 ------
 
-# ⚠️ 可能遇到的问题
+## ⚠️ 可能遇到的问题
 
 ### **1. ImageMagick 缺失**
 
@@ -194,7 +194,7 @@ docker exec -it mastodon-web-1 apt-get install -y imagemagick
 
 ------
 
-# 🚀 七、（可选）一键批量导入脚本
+## 🚀 七、（可选）一键批量导入脚本
 
 如需高频更新表情，可使用：
 
@@ -216,7 +216,7 @@ done
 
 ------
 
-# 📝 总结
+## 📝 总结
 
 本教程完成了从下载到导入的完整流程：
 

@@ -4,8 +4,8 @@ import ResourceList from "@/components/content/ResourceList.astro";
 
 const labs = [
   {
-    name: "Football Reincarnation",
-    desc: "足坛投胎模拟器。在足球历史的几个关键时刻做出选择，看看你会成为哪位球员。支持中英双语。",
+    name: "足坛投胎模拟器",
+    desc: "在足球历史的几个关键时刻做选择，看看自己会成为哪位球员，或遇到一个玩笑结局。支持中英双语。",
     tech: ["React", "Vite", "TypeScript"],
     repo: "https://github.com/AcaciusShun/football-reincarnation",
     url: "https://acaciusshun.github.io/football-reincarnation/",
@@ -16,5 +16,5 @@ const labs = [
 <ReadingLayout title="Labs" description="小实验、原型与可以亲手试试的东西。">
   <h1>实验</h1>
   <p>放一些出于好奇做的小实验、原型和演示。</p>
-  <ResourceList items={labs} />
+  <ResourceList items={labs} headingLevel={2} />
 </ReadingLayout>
